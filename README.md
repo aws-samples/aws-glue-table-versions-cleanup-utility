@@ -2,6 +2,11 @@
 
 AWS Glue has soft limits for **Number of table versions per table** and  **Number of table versions per account**. For more details on the soft-limits, refer [AWS Glue endpoints and quotas](https://docs.aws.amazon.com/general/latest/gr/glue.html). AWS Glue Table versions cleanup utility helps you delete old versions of Glue Tables. This is developed using AWS Glue SDK for Java. This is deployed as two AWS Lambda functions. This helps you retain X number of most recent versions for each Table and deletes the rest. Using this utility, you will be able to keep per-table and account level soft-limits under control. This can be scheduled using Amazon CloudWatch Events e.g. once in a month.
 
+This utility comes in two forms:
+
+  1. Java - use the [main](https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility/tree/main) branch
+  1. Python - use [main-python](https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility/tree/main-python) branch
+
 Note: This utility safely ignores Databases and Tables that are resource linked from an another AWS account to the AWS account this utility is deployed into. In other words, this utility cleans up old versions of a table ONLY when the table belongs to the account this utility is deployed to run. Refer [How Resource Links Work in Lake Formation](https://docs.aws.amazon.com/lake-formation/latest/dg/resource-links-about.html) for more details.
 
 ---
@@ -167,6 +172,14 @@ Refer the following AWS documentation for more details:
 
     1. [Schedule Expressions for Rules](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html)
     1. [Tutorial: Schedule AWS Lambda Functions Using CloudWatch Events](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/RunLambdaSchedule.html)
+
+---
+
+## Contributors
+
+1. Ravi Itha, Senior Big Data Consultant, Amazon Web Services, Inc.
+1. Phanee Gottumukkala, Associate Cloud Developer, Amazon Web Services, Inc.
+1. Julia Kroll, Data & ML Engineer, Amazon Web Services, Inc.
 
 ---
 

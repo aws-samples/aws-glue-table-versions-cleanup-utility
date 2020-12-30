@@ -4,7 +4,7 @@ AWS Glue has soft limits for **Number of table versions per table** and  **Numbe
 
 This utility comes in two forms:
 
-  1. Java - use the [main](https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility/tree/main) branch
+  1. Java - use [main](https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility/tree/main) branch
   1. Python - use [main-python](https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility/tree/main-python) branch
 
 Note: This utility safely ignores Databases and Tables that are resource linked from an another AWS account to the AWS account this utility is deployed into. In other words, this utility cleans up old versions of a table ONLY when the table belongs to the account this utility is deployed to run. Refer [How Resource Links Work in Lake Formation](https://docs.aws.amazon.com/lake-formation/latest/dg/resource-links-about.html) for more details.

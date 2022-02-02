@@ -1,0 +1,263 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This template creates all the required resouce for setting up the aws-glue-table-versions-cleanup-utility "https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility'
+
+# to do set the DDB Table defination 
+
+Parameters:
+  GlueDatabaseName:
+    Type: String
+    Description: All the Databases for which table version needs to be cleaned up. Make sure the database names are $ seperated. Like default$database1$database2
+  GlueTableVersionToBeRetained:
+    Type: String
+    Description: Define the number of table versions to be retained
+    Default: 100
+  S3BucketDeploymentPackage:
+    Type: String
+    Description: S3 bucket name having the Version clean up utlity deployment package, example :- my-deployment-bucket
+    
+  S3PrefixDeploymentPackage:
+    Type: String
+    Description: S3 prefix  having the Version clean up utlity deployment package, example :- my/path/deploy/lambda-deployment-package.zip
+
+Resources:
+  MyFifoQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName: "table_versions_cleanup_planner_queue.fifo"
+      FifoQueue: true
+      VisibilityTimeout: 900
+      MessageRetentionPeriod: 345600
+      DelaySeconds: 0
+      ContentBasedDeduplication: true
+  
+  PlannerTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties: 
+      AttributeDefinitions: 
+        - 
+          AttributeName: "execution_batch_id"
+          AttributeType: "N"
+        - 
+          AttributeName: "database_name_table_name"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+          AttributeName: "execution_batch_id"
+          KeyType: "HASH"
+        - 
+          AttributeName: "database_name_table_name"
+          KeyType: "RANGE"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "10"
+      TableName: "glue_table_version_cleanup_planner"      
+  
+  StatisticsTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties: 
+      AttributeDefinitions: 
+        - 
+          AttributeName: "execution_id"
+          AttributeType: "N"
+        - 
+          AttributeName: "execution_batch_id"
+          AttributeType: "N"
+      KeySchema: 
+        - 
+          AttributeName: "execution_id"
+          KeyType: "HASH"
+        - 
+          AttributeName: "execution_batch_id"
+          KeyType: "RANGE"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "10"
+      TableName: "glue_table_version_cleanup_statistics"  
+  
+  CreateCloudWatchLogPolicy: 
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      ManagedPolicyName: "table_versions_cleanup_cloudwatch_policy"
+      Path: "/"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - "logs:CreateLogStream"
+              - "logs:CreateLogGroup"
+              - "logs:PutLogEvents"
+            Resource: "*"
+
+  CreateDynamoDBPolicy: 
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      ManagedPolicyName: "table_versions_cleanup_lambda_dynamodb_policy"
+      Path: "/"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - "dynamodb:BatchWriteItem"
+              - "dynamodb:PutItem"
+              - "dynamodb:DeleteItem"
+              - "dynamodb:UpdateItem"
+            Resource: "*"
+
+  CreateGluePolicy: 
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      ManagedPolicyName: "table_versions_cleanup_lambda_glue_policy"
+      Path: "/"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - "glue:GetTableVersion"
+              - "glue:GetTableVersions"
+              - "glue:DeleteTableVersion"
+              - "glue:BatchDeleteTableVersion"
+            Resource: "*"
+
+  CreateSQSPolicy: 
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      ManagedPolicyName: "table_versions_cleanup_lambda_sqs_policy"
+      Path: "/"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - "sqs:DeleteMessage"
+              - "sqs:GetQueueUrl"
+              - "sqs:ListDeadLetterSourceQueues"
+              - "sqs:ReceiveMessage"
+              - "sqs:GetQueueAttributes"
+            Resource: "*"
+
+  CreateGlue2Policy: 
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      ManagedPolicyName: "table_versions_cleanup_planner_lambda_glue_policy"
+      Path: "/"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - "glue:GetDatabase"
+              - "glue:GetTables"
+              - "glue:GetDatabases"
+              - "glue:GetTable"
+            Resource: "*"
+
+  CreateSQS2Policy: 
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      ManagedPolicyName: "table_versions_cleanup_planner_lambda_sqs_policy"
+      Path: "/"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Effect: "Allow"
+            Action: 
+              - "sqs:SendMessageBatch"
+              - "sqs:SendMessage"
+            Resource: "*"
+  
+  TableVersionsCleanupPlannerLambdaExecRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns: 
+        - !Ref CreateCloudWatchLogPolicy
+        - !Ref CreateDynamoDBPolicy
+        - !Ref CreateSQSPolicy
+        - !Ref CreateGluePolicy
+
+  TableVersionsCleanupLambdaExecRole: 
+    Type: "AWS::IAM::Role"
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "lambda.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns: 
+        - !Ref CreateCloudWatchLogPolicy
+        - !Ref CreateDynamoDBPolicy
+        - !Ref CreateSQS2Policy
+        - !Ref CreateGlue2Policy
+  
+  TableVersionsCleanupPlannerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: table_versions_cleanup_planner.handler
+      Role: !GetAtt TableVersionsCleanupLambdaExecRole.Arn
+      Code:
+        S3Bucket: !Ref S3BucketDeploymentPackage
+        S3Key: !Ref S3PrefixDeploymentPackage
+      Runtime: python3.8
+      Timeout: 150
+      MemorySize: 10240
+      Environment:
+        Variables:
+          database_names_string_literal: !Ref GlueDatabaseName
+          separator: $
+          sqs_queue_url : !Sub https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/table_versions_cleanup_planner_queue.fifo
+          ddb_table_name: glue_table_version_cleanup_planner
+          hash_key: execution_batch_id
+          range_key: database_name_table_name
+          
+
+  TableVersionsCleanupLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: table_versions_cleanup.handler
+      Role: !GetAtt TableVersionsCleanupPlannerLambdaExecRole.Arn
+      Code:
+        S3Bucket: !Ref S3BucketDeploymentPackage
+        S3Key: !Ref S3PrefixDeploymentPackage
+      Runtime: python3.8
+      Timeout: 150
+      MemorySize: 10240
+      Environment:
+        Variables:
+          number_of_versions_to_retain: !Ref GlueTableVersionToBeRetained
+          ddb_table_name: glue_table_version_cleanup_statistics
+          hash_key: execution_id
+          range_key: execution_batch_id
+  LambdaFunctionEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt MyFifoQueue.Arn
+      FunctionName: !GetAtt TableVersionsCleanupLambda.Arn
+
+Outputs:
+  TableVersionsCleanupPlannerLambdaFunction:
+    Description: At FIRST**, execute this lamdba, it will post the message to SQS to runner the cleaner lambda
+    Value: !GetAtt TableVersionsCleanupPlannerLambda.Arn
+  TableVersionsCleanupLambdaFunction:
+    Description: Then the SECOND** execute this lamdba, it will post the message to SQS to runner the cleaner lambda
+    Value: !GetAtt TableVersionsCleanupLambda.Arn

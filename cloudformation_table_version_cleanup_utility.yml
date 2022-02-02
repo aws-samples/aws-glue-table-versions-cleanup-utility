@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: This template creates all the required resouce for setting up the aws-glue-table-versions-cleanup-utility "https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility'
+Description: This template creates all the required resources for setting up the aws-glue-table-versions-cleanup-utility "https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility'
 
 # to do set the DDB Table defination 
 

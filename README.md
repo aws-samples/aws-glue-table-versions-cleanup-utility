@@ -64,6 +64,7 @@ The following AWS services are required to deploy this utility:
     ```bash
     aws s3 cp lambda-deployment-package.zip s3://<bucket_name>/table_version_cleanup_code_package/
     ```
+**Note:**  Once the above deployment of the utility to S3 location is complete, a CloudFormation stack (cloudformation_table_version_cleanup_utility.yml) has been provided in the respository to provision the required AWS Resources. You can manully create as well by folowing the below steps.
 
 1. Create an Amazon SQS queue with the below details:
    1. name = ```table_versions_cleanup_planner_queue.fifo```

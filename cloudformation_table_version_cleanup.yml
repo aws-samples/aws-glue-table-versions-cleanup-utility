@@ -1,6 +1,6 @@
 # aws cloudformation create-stack --stack-name fn-table-version-cleanup --template-body file://C:\Users\fnrahul\Documents\Rahul\Perso\Learning\CF\KUMO\cloudformation_table_version_cleanup.yml  --profile training --capabilities CAPABILITY_NAMED_IAM 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Template to create a sample queue
+Description: This template creates all the required resouce for setting up the aws-glue-table-versions-cleanup-utility "https://github.com/aws-samples/aws-glue-table-versions-cleanup-utility'
 
 # to do set the DDB Table defination 
 

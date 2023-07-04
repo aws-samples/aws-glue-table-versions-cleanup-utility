@@ -168,7 +168,7 @@ Resources:
       ManagedPolicyArns: 
         - !Ref CreateCloudWatchLogPolicy
         - !Ref CreateDynamoDBPolicy
-        - !Ref CreateSQSPolicy
+        - !Ref CreateSQS2Policy
         - !Ref CreateGluePolicy
 
   TableVersionsCleanupLambdaExecRole: 
@@ -188,7 +188,7 @@ Resources:
       ManagedPolicyArns: 
         - !Ref CreateCloudWatchLogPolicy
         - !Ref CreateDynamoDBPolicy
-        - !Ref CreateSQS2Policy
+        - !Ref CreateSQSPolicy
         - !Ref CreateGlue2Policy
 
   LogGroupCleanupPlanner:
